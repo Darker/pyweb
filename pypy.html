@@ -1,0 +1,126 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="PSPad editor, www.pspad.com">
+  <title>PyPy</title>
+  </head>
+  <body>
+<h2>Select python file</h2>
+<input type="file" id="files" name="file" multiple />
+
+
+<!-- Script to handle file selection -->
+<script type="text/javascript"> 
+  function handleFileSelect(evt) {
+    // clear current list of files
+    FILES = {}
+    // get uploaded file list
+    var files = evt.target.files; // FileList object
+
+    // Loop through the FileList and render image files as thumbnails.
+    for (var i = 0, f; f = files[i]; i++) {
+      var reader = new FileReader();
+
+      // Closure to capture the file information.
+      reader.onload = (function (theFile) {
+          return function (e) {
+              addFileToPyPy(theFile.name, e.target.result);
+              FILES[theFile.name] = e.target.result; //Sk.importMainWithBody("<stdin>", false, e.target.result);
+          };
+      })(f);
+
+      // Read in the image file as a data URL.
+      reader.readAsText(f);
+    }
+  }
+
+  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+</script> 
+  <pre id="stdout"></pre>
+  <!--/pypyjs-release/lib-->
+  <!-- <script src="http://127.0.0.1:9090/pypyjs-0.4.0/lib/Promise.min.js" type="text/javascript" charset="utf-8"></script> -->
+  <script src="http://127.0.0.1:9090/pypyjs-0.4.0/lib/FunctionPromise.js" type="text/javascript" charset="utf-8"></script>
+  <script src="http://127.0.0.1:9090/pypyjs-0.4.0/lib/pypyjs.js" type="text/javascript" charset="utf-8"></script>
+  <script>
+      // Send all VM output to the console.
+      pypyjs.stdout = pypyjs.stderr = function(data) {
+          document.getElementById("stdout").appendChild(new Text(data));
+      }
+      // Display a helpful message and twiddle thumbs as it loads.
+      pypyjs.stdout("Loading PyPy.js.\n\n");
+      pypyjs.stdout("It's big, so this might take a while...");
+
+
+      // allows to queue input messages for PyPy
+      function InQueue() {
+          this.items = [];
+          this.resolvers = [];
+      }
+      InQueue.prototype.receiveItem = function() {
+          return new Promise((resolve, reject)=>{
+              if(this.items.length>0) {
+                  resolve(this.items.shift());
+              }
+              else {
+                  this.resolvers.push(resolve);
+              }
+          })
+      }
+      InQueue.prototype.addItem = function (item) {
+          if(this.resolvers.length>0) {
+              var resolve = this.resolvers.shift();
+              resolve(item);
+          }
+          else {
+              this.items.push(item);
+          }
+      }
+      var QUEUE = new InQueue();
+
+      pypyjs.ready().then(function () {
+          pypyjs.stdout('Welcome to PyPy.js!\n');
+
+          return pypyjs.repl(function (ps1) {
+              // wtf is this?
+              console.log(ps1);
+              return new Promise(function (resolve, reject) {
+                  // if DOM event is raised, the text will go to stdin
+                  // provided this is stdin, I mean, the hell I know?
+//                  function pypy_text(e) {
+//                      resolve(e.text);
+//                      window.removeEventListener("pypy_stdin", pypy_text);
+//                  }
+//                  window.addEventListener("pypy_stdin", pypy_text);
+//                  stdin_unlock();
+                  QUEUE.receiveItem().then(function(text) {resolve(text);});
+              });
+          });
+      }).then(null, function (err) {
+          //jqconsole.Reset();
+          pypy_dead = true;
+          console.error("PyPy failed: ", err);
+      });
+      function pypy_stdin(text) {
+//          return stdin_allowed.then(function () {
+//             var ev = new Event("pypy_stdin", {"bubbles":true, "cancelable":false});
+//             ev.text = text;
+//             window.dispatchEvent(ev);
+//         });
+          QUEUE.addItem(text);
+      }
+      pypy_stdin("import base64");
+      function addFileToPyPy(name, contents) {
+          var encoded_document = btoa(unescape(encodeURIComponent(contents)));
+          //console.log("Encoded data: ", encoded_document);
+          var pycode = "with open(\""+name+"\", \"w\") as text_file:"
+                     + "    text_file.write(base64.standard_b64decode(\""+encoded_document+"\"))";
+          pypy_stdin(pycode);
+      }
+      /*from os import listdir
+from os.path import isfile, join
+onlyfiles = [f for f in listdir("./") if isfile(join("./", f))]
+print(onlyfiles)*/
+  </script>
+  </body>
+</html>
