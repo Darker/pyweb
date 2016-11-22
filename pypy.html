@@ -25,7 +25,7 @@
       // Closure to capture the file information.
       reader.onload = (function (theFile) {
           return function (e) {
-              addFileToPyPy(theFile.name, e.target.result);
+              addFileToPyPy(theFile.name, python3topython2_7(e.target.result));
               FILES[theFile.name] = e.target.result; //Sk.importMainWithBody("<stdin>", false, e.target.result);
           };
       })(f);
@@ -36,6 +36,12 @@
   }
 
   document.getElementById('files').addEventListener('change', handleFileSelect, false);
+  function python3topython2_7(text) {
+      var imports = "from __future__ import print_function\n"
+                   //+
+
+      return imports + text;
+  }
 </script> 
   <pre id="stdout"></pre>
   <!--/pypyjs-release/lib-->
@@ -65,7 +71,7 @@
               else {
                   this.resolvers.push(resolve);
               }
-          })
+          });
       }
       InQueue.prototype.addItem = function (item) {
           if(this.resolvers.length>0) {
@@ -113,7 +119,8 @@
       function addFileToPyPy(name, contents) {
           var encoded_document = btoa(unescape(encodeURIComponent(contents)));
           //console.log("Encoded data: ", encoded_document);
-          var pycode = "with open(\""+name+"\", \"w\") as text_file:"
+          const dir = "/lib/pypyjs/lib_pypy/";
+          var pycode = "with open(\""+dir+name+"\", \"w\") as text_file:"
                      + "    text_file.write(base64.standard_b64decode(\""+encoded_document+"\"))";
           pypy_stdin(pycode);
       }
@@ -121,6 +128,47 @@
 from os.path import isfile, join
 onlyfiles = [f for f in listdir("./") if isfile(join("./", f))]
 print(onlyfiles)*/
+  </script>
+  <textarea id="code"></textarea>
+  <script type="text/javascript">
+      var cmd_history = [];
+      var cmd_history_offset = 0;
+      function keyPressed(e) {
+          if ((e.keyCode == 13 || e.key == "Enter") && !e.shiftKey) {
+              if (this.value != "") {
+                  pypy_stdin(this.value);
+                  if (this.value != cmd_history[cmd_history.length - 1]) {
+                      cmd_history.push(this.value);
+                      if (cmd_history.length > 100)
+                          cmd_history.length = 60;
+                  }
+                  cmd_history_offset = 0;
+                  this.value = "";
+              }
+              e.preventDefault();
+              return false;
+          }
+          //console.log(e.keyCode, e.key);
+          return true;
+      }
+      function keyUp(e) {
+          if (e.keyCode == 38 || e.keyCode == 40) {
+              if (cmd_history.length > 0) {
+                  var direction = e.keyCode == 38 ? 1 : -1;
+                  cmd_history_offset += direction;
+                  if (cmd_history_offset < 0)
+                      cmd_history_offset = cmd_history.length;
+                  if (cmd_history_offset >= cmd_history.length)
+                      cmd_history_offset = 0;
+                  this.value = cmd_history[cmd_history_offset];
+              }
+              e.preventDefault();
+              return false;
+          }
+          return true;
+      }
+      document.getElementById("code").addEventListener("keypress", keyPressed);
+      document.getElementById("code").addEventListener("keyup", keyUp);
   </script>
   </body>
 </html>
