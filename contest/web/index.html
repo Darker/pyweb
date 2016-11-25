@@ -1,0 +1,307 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <html>
+        <head>
+            <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+            <meta name="generator" content="PSPad editor, www.pspad.com" />
+            <title>Soutez</title>
+            <link charset="utf-8" type="text/css" rel="stylesheet" href="index.css"/>
+            <link charset="utf-8" type="text/css" rel="stylesheet" href="login.css"/>
+            <link charset="utf-8" type="text/css" rel="stylesheet" href="jquery-ui.css"/>
+            <link charset="utf-8" type="text/css" rel="stylesheet" href="jquery-ui-skin.css"/>
+            
+            <link charset="utf-8" type="text/css" rel="stylesheet" href="reversi/style.css"/>
+        </head>
+        <body>
+            <script type="text/javascript" data-main="remote.js" src="require.js"></script>
+            <div id="connecting" class="overlay">
+                <div class="inner">
+                    <span>Connecting ...</span>
+                </div>
+            </div>
+            <div id="challenge" class="overlay" style="display: none">
+                <div class="inner">
+                    <div>Battle challenge with <span class="playername"></span>!</div>
+                    <div><progress max="100" value="100"></progress></div>
+                    <div class="options"><button class="challenge-reject red">Decline</button><button class="challenge-accept red">Accept</button></div>
+                </div>
+            </div>
+            <div id="login-dialog" class="dialog login-dialog" title="Log in please" style="display: none">
+                <form name="s">
+                    <fieldset>Name:
+                        <input type="text" name="username" />
+                        <br />Password:
+                        <input type="password" placeholder="not used yet" name="pw" disabled />
+                        <br />
+                    </fieldset>
+                </form>
+            </div>
+            <table cellpadding="0" cellspacing="0" class="dont-you-dare-say-anything-about-table-layouts-i-dare-ya-motherfucker">
+              <tr>
+                <td>
+                    <pre id="stdout"></pre>
+                    <textarea id="code" placeholder="print &quot;Hello world&quot;"></textarea>
+                </td>
+                <td>
+                    <div id="prepare" style="/*display: none*/">
+                        <h2>Select python file</h2>
+                        <input type="file" id="files" name="file" multiple />
+                        The <tt>MyPlayer</tt> class is in <select id="player_file" disabled></select>.
+                    </div>
+                    <div id="game_field">
+                    
+                    </div>
+                    <div id="old_games">
+                    
+                    </div>
+                </td>
+              </tr>
+              
+            </table>
+
+            
+            <!-- scripts -->
+
+            <script type="text/javascript">//<![CDATA[ 
+              var FILES = [];
+              function handleFileSelect(evt) {
+                // clear current list of files
+                
+                // get uploaded file list
+                var files = evt.target.files; // FileList object
+            
+                // Loop through the FileList and render image files as thumbnails.
+                for (var i = 0, f; f = files[i]; i++) {
+                  var reader = new FileReader();
+            
+                  // Closure to capture the file information.
+                  reader.onload = (function (theFile) {
+                      return function (e) {
+                          var text = e.target.result;
+                          var file = {name:theFile.name, data:text};
+                          FILES.push(file);
+                          if(file.name.endsWith(".py")) {
+                              file.classes = getClassesInFile(text);
+                              addFileToPyPy(theFile.name, python3topython2_7(text));
+                              // show files in combobox
+                              if(file.classes.indexOf("MyPlayer")!=-1) {
+                                  var option = document.createElement("option");
+                                  option.appendChild(new Text(theFile.name));
+                                  option.value = theFile.name;
+                                  var combo = $("#player_file")[0];
+                                  combo.removeAttribute("disabled");
+                                  combo.appendChild(option);
+                              }
+                          }
+                          else {
+                              addFileToPyPy(theFile.name, text);
+                          }
+                      };
+                  })(f);
+            
+                  // Read in the image file as a data URL.
+                  reader.readAsText(f);
+                }
+              }
+              function getClassesInFile(data) {
+                  const reg = new RegExp(/^[ \t]*class +([a-z_][a-z0-9_]*)(\([^\)]+\))?/gmi);   
+                  var result;
+                  var classes = [];
+                  while((result = reg.exec(data)) !== null) {
+                      classes.push(result[1]);
+                  }
+                  return classes;
+              }
+              // Returns name of file that was selected as the player file
+              function getSelectedFile() {
+                  return $("#player_file").find('option:selected').val() || "";
+              }
+              document.getElementById('files').addEventListener('change', handleFileSelect, false);
+              function python3topython2_7(text) {
+                  var imports = "from __future__ import print_function\n"
+                               //+
+                  return imports + text;
+              }
+              // adds remote file to python list of files
+              function fetchPython(url, filename) {
+                  if(!filename) {
+                      filename = url.indexOf("/")!=-1?url.substr(url.lastIndexOf("/")):url;
+                  }
+                  return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.onload = function () {
+                      if (xhr.status != 200) {
+                        reject(xhr);
+                      } else {
+                        addFileToPyPy(filename, xhr.responseText);
+                        resolve(xhr);
+                      }
+                    };
+                    xhr.onerror = function(err) {
+                        reject(err);
+                    }
+                    xhr.open('GET', url);
+                    xhr.responseType = 'text';
+                    xhr.send(null);
+                  });
+              }
+              //]]>
+            </script> 
+            
+            <!--/pypyjs-release/lib-->
+            <script src="pypyjs-0.4.0/lib/FunctionPromise.js" type="text/javascript" charset="utf-8"></script>
+            <script src="pypyjs-0.4.0/lib/pypyjs.js" type="text/javascript" charset="utf-8"></script>
+            <script>//<![CDATA[
+            /**
+             * Code bellow is copied and modified from http://pypyjs.org/ 
+             * **/
+                // Send all VM output to the console.
+                pypyjs.stdout = pypyjs.stderr = function(data) {
+                    document.getElementById("stdout").appendChild(new Text(data));
+                }
+                // Display a helpful message and twiddle thumbs as it loads.
+                pypyjs.stdout("Loading PyPy.js.\n");
+                pypyjs.stdout("It's big, so this might take a while...\n");
+                // allows to queue input messages for PyPy
+                function InQueue() {
+                    this.items = [];            
+                    this.resolvers = [];
+                }
+                InQueue.prototype.receiveItem = function() {
+                    return new Promise((resolve, reject)=>{
+                        if(this.items.length>0) {
+                            resolve(this.items.shift());
+                        }
+                        else {
+                            this.resolvers.push(resolve);
+                        }
+                    });
+                }
+                InQueue.prototype.addItem = function (item) {
+                    if(this.resolvers.length>0) {
+                        var resolve = this.resolvers.shift();
+                        resolve(item);
+                    }
+                    else {
+                        this.items.push(item);
+                    }
+                }
+                var PYTHON_QUEUE = new InQueue();
+                pypyjs.totalMemory = 20*268435456;
+                pypyjs.ready().then(function () {
+                    pypyjs.stdout('Welcome to PyPy.js!\n');
+            
+                    return pypyjs.repl(function (ps1) {
+                        // wtf is this?
+                        console.log(ps1);
+                        return new Promise(function (resolve, reject) {
+                           PYTHON_QUEUE.receiveItem().then(function(text) {resolve(text);});
+                        });
+                    });
+                }).then(null, function (err) {
+                    //jqconsole.Reset();
+                    pypy_dead = true;
+                    console.error("PyPy failed: ", err);
+                });
+                function pypy_stdin(text) {
+                    PYTHON_QUEUE.addItem(text);
+                }
+                pypy_stdin("import base64");
+                fetchPython("reversi/BrowserGame.py");
+                function addFileToPyPy(name, contents) {
+                    var encoded_document = btoa(unescape(encodeURIComponent(contents)));
+                    //console.log("Encoded data: ", encoded_document);
+                    const dir = "/lib/pypyjs/lib_pypy/";
+                    var pycode = "with open(\""+dir+name+"\", \"w\") as text_file:"
+                               + "    text_file.write(base64.standard_b64decode(\""+encoded_document+"\"))";
+                    pypy_stdin(pycode);
+                }
+                /*from os import listdir
+            from os.path import isfile, join
+            onlyfiles = [f for f in listdir("./") if isfile(join("./", f))]
+            print(onlyfiles)*/
+            //]]>
+            </script>
+            
+            <script type="text/javascript"> //<![CDATA[
+                var cmd_history = [];
+                var cmd_history_offset = 0;
+                function keyPressed(e) {
+                    if ((e.keyCode == 13 || e.key == "Enter") && !e.shiftKey) {
+                        if (this.value != "") {
+                            var echo = ">>> "+this.value.replace(/\n(.)/g, "\n>>> $1");
+                            if(!echo.endsWith("\n"))
+                                echo += "\n";
+                            pypyjs.stdout(echo);
+                            pypy_stdin(this.value);
+                            if (cmd_history.indexOf(this.value)==-1) {
+                                cmd_history.push(this.value);
+                                if (cmd_history.length > 70)
+                                    cmd_history.length = 60;
+                            }
+                            cmd_history_offset = cmd_history.length;
+                            this.value = "";
+                        }
+                        e.preventDefault();
+                        return false;
+                    }
+                    //console.log(e.keyCode, e.key);
+                    return true;
+                }
+                function keyUp(e) {
+                    if (e.keyCode == 38 || e.keyCode == 40) {
+                        if (cmd_history.length > 0) {
+                            var direction = e.keyCode == 38 ? 1 : -1;
+                            cmd_history_offset += direction;
+                            if (cmd_history_offset < 0)
+                                cmd_history_offset = cmd_history.length-1;
+                            if (cmd_history_offset >= cmd_history.length)
+                                cmd_history_offset = 0;
+                            this.value = cmd_history[cmd_history_offset];
+                        }
+                        e.preventDefault();
+                        return false;
+                    }
+                    return true;
+                }
+                document.getElementById("code").addEventListener("keypress", keyPressed);
+                document.getElementById("code").addEventListener("keyup", keyUp);
+/** @TODO: figure out how to clear cached parsed file:
+         *Traceback (most recent call last):
+          File "<console>", line 1, in <module>
+          File "/lib/pypyjs/lib_pypy/player.py", line 113, in <module>
+            move = player.move(board)
+          File "/lib/pypyjs/lib_pypy/player.py", line 40, in move
+            coords = self.find_position(board)
+          File "/lib/pypyjs/lib_pypy/player.py", line 77, in find_position
+            coords, scores = board.get_positions_and_scores(self)
+          File "/lib/pypyjs/lib_pypy/board.py", line 109, in get_positions_and_scores
+            if(board[row][col] == self.colors[self.NEUTRAL]):
+        AttributeError: Board instance has no attribute 'colors'
+           0 1 2 3 4 5 6 7 
+        0 |- - - - - - - - 
+        1 |- - - - - - - - 
+        2 |- - - - - - - - 
+        3 |- - - X O - - - 
+        4 |- - - O X - - - 
+        5 |- - - - - - - - 
+        6 |- - - - - - - - 
+        7 |- - - - - - - - 
+        Traceback (most recent call last):
+          File "<console>", line 1, in <module>
+          File "/lib/pypyjs/lib_pypy/player.py", line 113, in <module>
+            move = player.move(board)
+          File "/lib/pypyjs/lib_pypy/player.py", line 40, in move
+            coords = self.find_position(board)
+          File "/lib/pypyjs/lib_pypy/player.py", line 77, in find_position
+            coords, scores = board.get_positions_and_scores(self)
+          File "/lib/pypyjs/lib_pypy/board.py", line 109, in get_positions_and_scores
+            if(board[row][col] == player.colors[player.NEUTRAL]):
+        AttributeError: Board instance has no attribute 'colors'
+
+ **/
+                
+                
+              //]]>
+            </script> 
+        </body>
+    </html>
