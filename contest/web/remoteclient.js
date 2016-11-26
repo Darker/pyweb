@@ -16,8 +16,9 @@ define(["eventemitter2", "jquery", "jquery.ui"], function(EventEmitter2, $$$) {
           console.log("stats!", stats);
           this.players.player(stats.name).updateStats(stats);
       });
-      this.socket.on("player.quit", (stats)=> {
-          this.players.player(stats.name).remove();
+      this.socket.on("player.quit", (name)=> {
+          console.log("player quit");
+          this.players.player(name).remove();
       });
       EventEmitter2.call(this, {wildcard: false, newListener: false});
   }

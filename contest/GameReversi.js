@@ -55,6 +55,10 @@ define(["eventemitter2", "settings"], function (EventEmitter2, settings) {
         if (player != data.from || !this.halfTurn) {
             return this.gameErrorSimple("You tried to play instead of the other player. That was a very bad idea!", player);
         }
+        var field = data.data.field;
+        if(!(field instanceof Array) || field.length!=2) {
+            return this.gameErrorSimple("Invalid move data.", player);
+        }
         try {
             this.place(data.data.field, player, null);
         }
@@ -104,7 +108,7 @@ define(["eventemitter2", "settings"], function (EventEmitter2, settings) {
             // This means the player is not in the list of causes fyi
             if(!causes.find((cause)=>cause==player)) {
                 player.score+= causedBySomeone? 2:1;
-                winner.client.gameOver("Game/enemy error");
+                player.client.gameOver("Game/enemy error");
             }       
         });
         // punish those who caused it
@@ -213,7 +217,7 @@ define(["eventemitter2", "settings"], function (EventEmitter2, settings) {
         first_iteration = true;
         ended_properly = false;
         board = this.board;
-        console.log("[GAME] Finding grab stones at ", pos, " in direction ", direction);
+        //console.log("[GAME] Finding grab stones at ", pos, " in direction ", direction);
         while (pos[0] >= 0 && pos[1] >= 0 && pos[0] < this.rows && pos[1] < this.cols) {
             current_color = board[pos[0]][pos[1]];
             if (first_iteration) {
@@ -238,8 +242,8 @@ define(["eventemitter2", "settings"], function (EventEmitter2, settings) {
             pos[0] += direction[0];
             pos[1] += direction[1];
         }
-        if(first_iteration)
-            console.log("      [FAIL] Pos is not valid: ", pos, " in field ", this.rows, "x", this.cols);
+        //if(first_iteration)
+        //    console.log("      [FAIL] Pos is not valid: ", pos, " in field ", this.rows, "x", this.cols);
         if (ended_properly) {
             return fields;
         } else {

@@ -2,8 +2,11 @@ var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
-         
-server.listen(8080);
+var ARGS = new (require("./SimpleArgv"))(); 
+ARGS.default("ip", "127.0.0.1");
+ARGS.default("port", "8080");
+        
+server.listen(ARGS.arg_port);
 //app.use("ddd", express.static(__dirname + "/../../pypyjs-0.4.0/"));
 app.use("/pypyjs-0.4.0/", express.static(__dirname + "/../../pypyjs-0.4.0/"));
 app.use("/", express.static(__dirname+"/web"));                                        // /^(?:(?!pypyjs-0\.4\.0).)*$/

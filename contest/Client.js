@@ -47,10 +47,20 @@ define(["eventemitter2", "fs", "GameReversi", "settings"], function(EventEmitter
     this.socket.emit("login.ok", name);
     console.log("Client login: ", name);
     this.emit_state();
+    this.send_player_list();
   }
   Client.prototype.emit_state = function() {
       if(this.name != null)
           this.server.broadcast("player.stats", {name:this.name, score: this.score, busy: this.busy});
+  }
+  Client.prototype.send_player_list = function() {
+      // This is dirty
+      // should be replaced with some "player.stats.multi"
+      // event that sends whole array
+      this.server.clients.forEach((client) => {
+          if(client.name != null)
+              this.socket.emit("player.stats", {name:client.name, score: client.score, busy: client.busy});
+      });
   }
   // This is called when the remote player represented by this object
   // replies to a challenge

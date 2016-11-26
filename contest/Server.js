@@ -11,13 +11,6 @@ define(["eventemitter2"], function(EventEmitter2) {
   Server.prototype.addClient = function(c) {
       if(this.clients.indexOf(c)==-1) {
           this.clients.push(c);
-          // This is dirty
-          // should be replaced with some "player.stats.multi"
-          // event that sends whole array
-          this.clients.forEach((client) => {
-              if(client.name != null)
-                  c.emit("player.stats", {name:client.name, score: client.score, busy: client.busy});
-          });
       }
   }
   // Returns client until concept of players is implemented

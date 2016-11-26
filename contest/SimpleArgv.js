@@ -1,5 +1,4 @@
-// do not modify
-// originally from sobot project
+// comes from qt gui test
 function Arguments(proc) {
     if (typeof proc == "object") {
         this.process = proc;
@@ -8,7 +7,19 @@ function Arguments(proc) {
         this.process = process;
     }
     this.parse();
+    this._defaults = {};
+}       
+
+Arguments.prototype.default = function (name, val) {
+    if (typeof val != "undefined") {
+        this._defaults[name] = val;
+        this.addGetterFor(name);
+    }
+    return this._defaults[name];
 }
+/*Object.defineProperty(Arguments.prototype, "defaults", {
+    get: function() {}
+})*/
 Arguments.prototype.parse = function () {
     var p_args = this.process.argv;
     var args = this.args = {};
@@ -24,22 +35,30 @@ Arguments.prototype.parse = function () {
             name = arg.substr(0, index);
             value = arg.substr(index + 1);
         }
-        var internal_name = "_" + name;
+
         var defined_already = false;
-        if (args[internal_name]) {
+        if (args[name]) {
             value = [value];
-            value.push(args[internal_name]);
+            value.push(args[name]);
             defined_already = true;
         }
-        args[internal_name] = value;
-        if (!defined_already) {
-            Object.defineProperty(args, name, {
-                get: getterForName(internal_name)
-            });
+        args[name] = value;
+        if (!defined_already && !this.hasOwnProperty("arg_" + name)) {
+            //Object.defineProperty(args, name, {
+            //    get: getterForName(internal_name)
+            //});
+            
             Object.defineProperty(this, "arg_" + name, {
-                get: getterForName(internal_name)
+                get: getterForNameArgs(name)
             });
         }
+    }
+}
+Arguments.prototype.addGetterFor = function (name) {
+    if (!this.hasOwnProperty("arg_" + name)) {
+        Object.defineProperty(this, "arg_" + name, {
+            get: getterForNameArgs(name)
+        });
     }
 }
 function getterForName(name) {
@@ -49,7 +68,14 @@ function getterForName(name) {
 }
 function getterForNameArgs(name) {
     return function () {
-        return this.args[name];
+        if (typeof this.args[name] != "undefined") {
+            return this.args[name];
+        }
+        else if (typeof this._defaults[name] != "undefined") {
+            return this._defaults[name];
+        }
+        else {
+        }
     }
 }
 module.exports = Arguments;
