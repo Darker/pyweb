@@ -80,6 +80,18 @@ div.overlay div.inner {
   margin: 0px;
 }
 
+/* player list **/
+table.player-list {
+  position: absolute;
+  top: 2em;
+  right: 2em;
+  border: 1px solid black;
+}
+table.player-list td.player-name {
+  font-weight: bold;
+  font-family: "Courier New";
+  
+}
 /** Client window **/
 div.clientwindow.login div.nologin {
   display: none;

@@ -97,6 +97,7 @@ define(["eventemitter2", "jquery", "jquery.ui"], function(EventEmitter2, $$$) {
       });
   }
   RemoteClient.prototype.killGame = function(data) {
+      console.log("Game over: ", data);
       var game = this.game;
       this.game = null;
       game.gameOver(data.message);
@@ -120,6 +121,7 @@ define(["eventemitter2", "jquery", "jquery.ui"], function(EventEmitter2, $$$) {
   }
   function PlayerList(client) {
       this.table = document.createElement("table");
+      this.table.className = "player-list";
       this.client = client;
       this.players = [];
       //this.client.socket.on("
@@ -140,8 +142,10 @@ define(["eventemitter2", "jquery", "jquery.ui"], function(EventEmitter2, $$$) {
       this.score = score;
       this.container = document.createElement("tr");
       this.nameTd = document.createElement("td");
+      this.nameTd.className = "player-name";
       this.nameTd.appendChild(new Text(name));
       this.scoreTd = document.createElement("td");
+      this.nameTd.className = "player-score";
       this.scoreText = new Text("0");
       this.scoreTd.appendChild(this.scoreText);
       this.controlsTd = document.createElement("td");

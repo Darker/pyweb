@@ -150,7 +150,7 @@ define(["eventemitter2", "fs", "GameReversi", "settings"], function(EventEmitter
    * Makes client available for games again **/
   Client.prototype.gameOver = function(message) {
       this.unpair();
-      this.emit("game.over", {result: message});
+      this.socket.emit("game.over", {message: message});
       this.emit_state();
   }
   Client.prototype.error = function(text) {
