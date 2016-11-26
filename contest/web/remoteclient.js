@@ -20,6 +20,18 @@ define(["eventemitter2", "jquery", "jquery.ui"], function(EventEmitter2, $$$) {
           console.log("player quit");
           this.players.player(name).remove();
       });
+      this.socket.on("disconnect", ()=>{
+          $("#connecting").show();
+          this.formerName = this.name;
+          this.killGame({message: "Disconnected."});
+          this.name = "";
+      });
+      this.socket.on("reconnect", ()=>{
+          console.log("reconnected, logging in");
+          if(this.formerName != "") {
+              this.requestLogin(this.formerName);
+          }
+      });
       EventEmitter2.call(this, {wildcard: false, newListener: false});
   }
   RemoteClient.prototype = Object.create(EventEmitter2.prototype);
@@ -39,6 +51,7 @@ define(["eventemitter2", "jquery", "jquery.ui"], function(EventEmitter2, $$$) {
   RemoteClient.prototype.loginSuccess = function(name) {
       this.name = name;
       document.body.appendChild(this.players.table);
+      $("#connecting").hide();
   }
   RemoteClient.prototype.challenged = function(challenger) {
       //this.socket.emit("challenge.reply", confirm("You've been challenged by "+challenger+". Accept?"));
@@ -101,7 +114,8 @@ define(["eventemitter2", "jquery", "jquery.ui"], function(EventEmitter2, $$$) {
       console.log("Game over: ", data);
       var game = this.game;
       this.game = null;
-      game.gameOver(data.message);
+      if(game!=null)
+          game.gameOver(data.message);
   }
   // Forward game event to game if possible
   RemoteClient.prototype.gameEvent = function(evt) {

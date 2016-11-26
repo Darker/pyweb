@@ -48,6 +48,9 @@ div.overlay div.inner {
     margin: 0;
     padding: 0;
 }
+#connecting  {
+    background-color: black;
+}
 #connecting div.inner  {
     font-size: 20pt;
     color: red;
@@ -92,6 +95,7 @@ table.player-list td.player-name {
   font-family: "Courier New";
   
 }
+
 /** Client window **/
 div.clientwindow.login div.nologin {
   display: none;
